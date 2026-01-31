@@ -102,19 +102,31 @@ update_staff_shift(day_name_cache, sched_data, '08-25', 'Friday', {
     'Ron' : {'cut_early' : '6a - 2p LEVEL ONE'},
     'Adam' : {'cut_early' : '11a - 5p LEVEL THREE'}
 })
-
-update_staff_shift(day_name_cache, sched_data, '08-25', 'Friday', ['Tiff', 'Ron', 'Adam'], ['9a - 5p LEVEL THREE', '6a - 2p LEVEL ONE', '11a - 5p LEVEL THREE'])
-update_staff_shift(day_name_cache, sched_data, '08-25', 'Sunday', ['Tiff', 'Dempsey', 'Adam'], ['6a - 1p LEVEL THREE', '7a - 11a LEVEL THREE', '11a - 3p LEVEL THREE'], [True, True, False])
-add_call_offs(day_name_cache, sched_data, '08-25', 'Saturday', ['Preston'])
+update_staff_shift(day_name_cache, sched_data, '08-25', 'Saturday', {
+    'Preston' : {'called_off' : True}
+})
+update_staff_shift(day_name_cache, sched_data, '08-25', 'Sunday', {
+    'Tiff' : {'cut_early' : '6a - 1p LEVEL THREE'},
+    'Dempsey' : {'cut_early' : '7a - 11a LEVEL THREE'},
+    'Adam' : {'new_entry' : '11a - 3p LEVEL THREE'}
+})
 
 # Fixing 09-01 #
 add_missing_staff(day_name_cache, sched_data, '09-01', 'Friday', "12p", 'Cayenne Leupold')
 add_missing_staff(day_name_cache, sched_data, '09-01', 'Friday', "11a", 'Maureen')
 add_missing_staff(day_name_cache, sched_data, '09-01', 'Saturday', "11a - 7p SUP", 'Derek Moreno')
 add_missing_staff(day_name_cache, sched_data, '09-01', 'Sunday', "9a", 'Tom White')
-add_call_offs(day_name_cache, sched_data, '09-01', 'Friday', ['Maureen'])
-add_call_offs(day_name_cache, sched_data, '09-01', 'Saturday', ['Cayenne', 'Maureen'])
-add_call_offs(day_name_cache, sched_data, '09-01', 'Sunday', ['Maureen', 'Albert'])
+update_staff_shift(day_name_cache, sched_data, '09-01', 'Friday', {
+    'Maureen' : {'called_off' : True}
+})
+update_staff_shift(day_name_cache, sched_data, '09-01', 'Saturday', {
+    'Cayenne' : {'called_off' : True},
+    'Maureen' : {'called_off' : True}
+})
+update_staff_shift(day_name_cache, sched_data, '09-01', 'Sunday', {
+    'Maureen' : {'called_off' : True},
+    'Albert' : {'called_off' : True}
+})
 # NEED TO CHECK TEAM SHEETS FOR UPDATED STAFF SHIFTS #
 
 # Fixing 09-08 #
