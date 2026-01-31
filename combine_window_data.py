@@ -39,52 +39,47 @@ for file in os.listdir(sched_directory):
 
 day_name_cache = {}
 
-def manage_day_name_cache(day_name_cache, sched, week, col_prefix):
-    day_key = f'{week}: {col_prefix}' # Needs week to prevent duplicate column names
+def manage_day_name_cache(day_name_cache, sched, week, day):
+    day_key = f'{week}: {day}' # Needs week to prevent duplicate column names
     if day_key not in day_name_cache: # Add this key to the cache for more efficient lookup
         temp = sched.loc[sched['Week'] == week].dropna(axis=1, how='all')
-        matches = temp.columns[temp.columns.str.startswith(col_prefix)]
+        matches = temp.columns[temp.columns.str.startswith(day)]
         if matches.empty:
-            print(f'Day with name: {col_prefix} not found...')
+            print(f'Day with name: {day} not found...')
             return
         col_name = matches[0] # The name of the column for the specific day
         day_name_cache[f'{week}: {day_key.split()[-1]}'] = col_name # Stores day name with week to prevent duplicates and the number separately for easier access
     return [day_key, day_name_cache]
 
-def add_call_offs(day_name_cache, sched, week, col_prefix, call_offs):
-    cache_result = manage_day_name_cache(day_name_cache, sched, week, col_prefix)
+# day_name_cache : cache of column names for quicker access
+# sched : the schedule dataframe
+# week : desired week
+# day : day of the week (aka prefix of column)
+# staff_changes : dictionary of changes for staff
+def update_staff_shift(day_name_cache, sched, week, day, staff_changes):
+    cache_result = manage_day_name_cache(day_name_cache, sched, week, day)
     if cache_result == None:
-        print(f'Day with name: {col_prefix} not found...')
+        print(f'Day with name: {day} not found...')
         return
     day_name_cache = cache_result[1]
     day_name = day_name_cache[cache_result[0]]
-    for call_off in call_offs:
-        mask = (sched['Week'] == week) & (sched['Staff'].str.contains(call_off, case=False, regex=False, na=False)) # Retrieves row for specific team member that called off
-        sched.loc[mask, day_name] = sched.loc[mask, day_name] + ' CALLED_OFF'
+    # staff_changes is staff_name : {call_off : bool, cut_early : str (new time), stayed_late : str (new time), new_entry : str (new time)}
+    for name, changes in staff_changes.items():
+        mask = (sched['Week'] == week) & (sched['Staff'].str.contains(name, case=False, regex=False, na=False)) # Retrieves row for specific team member that called off
+        if changes['call_off']:
+            sched.loc[mask, day_name] += ' CALLED_OFF'
+        elif changes['cut_early']:
+            sched.loc[mask, day_name] = changes['cut_early'] + ' CUT_EARLY'
+        elif changes['stayed_late']:
+            sched.loc[mask, day_name] = changes['stayed_late'] + ' STAYED_LATE'
+        elif changes['new_entry']:
+            sched.loc[mask, day_name] = changes['new_entry'] + ' UNSCHEDULED'
     return True
 
-def update_staff_shift(day_name_cache, sched, week, col_prefix, staff_names, new_times, cut_early=[]):
-    cache_result = manage_day_name_cache(day_name_cache, sched, week, col_prefix)
+def add_missing_staff(day_name_cache, sched, week, day, time, staff_name):
+    cache_result = manage_day_name_cache(day_name_cache, sched, week, day)
     if cache_result == None:
-        print(f'Day with name: {col_prefix} not found...')
-        return
-    day_name_cache = cache_result[1]
-    day_name = day_name_cache[cache_result[0]]
-    if len(staff_names) != len(new_times):
-        print(f'Updating shifts for {day_name} failed: amount of staff names and time changes do not match')
-        return
-    for i in range(len(staff_names)): # Implies the staff and times match the same index
-        mask = (sched['Week'] == week) & (sched['Staff'].str.contains(staff_names[i], case=False, regex=False, na=False)) # Retrieves row for specific team member that called off
-        if not cut_early:
-            sched.loc[mask, day_name] = new_times[i] + ' CUT_EARLY'
-        else:
-            sched.loc[mask, day_name] = new_times[i] + ' CUT_EARLY' if cut_early[i] else new_times[i]
-    return True
-
-def add_missing_staff(day_name_cache, sched, week, col_prefix, time, staff_name):
-    cache_result = manage_day_name_cache(day_name_cache, sched, week, col_prefix)
-    if cache_result == None:
-        print(f'Day with name: {col_prefix} not found...')
+        print(f'Day with name: {day} not found...')
         return
     day_name_cache = cache_result[1]
     day_name = day_name_cache[cache_result[0]]
@@ -102,10 +97,15 @@ add_missing_staff(day_name_cache, sched_data, '08-25', 'Friday', "12p - 8p", 'De
 add_missing_staff(day_name_cache, sched_data, '08-25', 'Friday', "7a", 'Kriss McGough')
 add_missing_staff(day_name_cache, sched_data, '08-25', 'Friday', "11a - 7p", 'Maureen')
 add_missing_staff(day_name_cache, sched_data, '08-25', 'Sunday', "9a", 'Tom White')
+update_staff_shift(day_name_cache, sched_data, '08-25', 'Friday', {
+    'Tiff' : {'cut_early' : '9a - 5p LEVEL THREE'},
+    'Ron' : {'cut_early' : '6a - 2p LEVEL ONE'},
+    'Adam' : {'cut_early' : '11a - 5p LEVEL THREE'}
+})
+
 update_staff_shift(day_name_cache, sched_data, '08-25', 'Friday', ['Tiff', 'Ron', 'Adam'], ['9a - 5p LEVEL THREE', '6a - 2p LEVEL ONE', '11a - 5p LEVEL THREE'])
 update_staff_shift(day_name_cache, sched_data, '08-25', 'Sunday', ['Tiff', 'Dempsey', 'Adam'], ['6a - 1p LEVEL THREE', '7a - 11a LEVEL THREE', '11a - 3p LEVEL THREE'], [True, True, False])
 add_call_offs(day_name_cache, sched_data, '08-25', 'Saturday', ['Preston'])
-
 
 # Fixing 09-01 #
 add_missing_staff(day_name_cache, sched_data, '09-01', 'Friday', "12p", 'Cayenne Leupold')
@@ -134,30 +134,87 @@ add_missing_staff(day_name_cache, sched_data, '09-15', 'Friday', "8a", 'Cayenne 
 add_missing_staff(day_name_cache, sched_data, '09-15', 'Friday', "12p - 8p SUP", 'Derek Moreno')
 add_missing_staff(day_name_cache, sched_data, '09-15', 'Friday', "11a", 'Maureen')
 add_missing_staff(day_name_cache, sched_data, '09-15', 'Sunday', "9a", 'Tom White')
-# YOU LEFT OFF HERE #
-update_staff_shift(day_name_cache, sched_data, '09-15', 'Friday', ['Brigitte', 'Ron', 'Patricia', 'Cayenne', 'Darrell', 'Ryan', 'Gabriel'], ['6a - 1p LEVEL THREE', '6a - 1p LEVEL ONE', '7a - 4p LEVEL ONE', '8a - 3p ORIENTATION', '6a - 1p LEVEL THREE', '9a - 4p ORIENTATION'])
+update_staff_shift(day_name_cache, sched_data, '09-15', 'Friday', ['Brigitte', 'Ron', 'Patricia', 'Cayenne', 'Darrell', 'Ryan', 'Gabriel'], ['6a - 1p LEVEL THREE', '6a - 1p LEVEL ONE', '7a - 4p LEVEL ONE', '8a - 3p ORIENTATION', '6a - 1p LEVEL THREE', '9a - 4p ORIENTATION', '10a - 3:30p ORIENTATION'])
 add_call_offs(day_name_cache, sched_data, '09-15', 'Friday', ['Adam', 'Maureen'])
 add_call_offs(day_name_cache, sched_data, '09-15', 'Saturday', ['Adam', 'Brandon'])
 add_call_offs(day_name_cache, sched_data, '09-15', 'Sunday', ['Tif', 'Cayenne'])
-
-print(sched_data[sched_data['Week'] == '09-08'].dropna(axis=1, how='all'))
 
 
 # Fixing 09-22 #
 add_missing_staff(day_name_cache, sched_data, '09-22', 'Friday', "8a", 'Cayenne Leupold')
 add_missing_staff(day_name_cache, sched_data, '09-22', 'Friday', "12p - 8p SUP", 'Derek Moreno')
 add_missing_staff(day_name_cache, sched_data, '09-22', 'Sunday', "9a", 'Tom White')
-sched_data.loc[(sched_data['Week'] == '09-22') & (sched_data['Staff'] == 'Brigitte Vincent'), 'Saturday 27'] = '6a - 1p LEVEL THREE'
-sched_data.loc[(sched_data['Week'] == '09-22') & (sched_data['Staff'] == 'Tiffany Willson'), 'Saturday 27'] = '6a - 1p LEVEL THREE'
-sched_data.loc[(sched_data['Week'] == '09-22') & (sched_data['Staff'] == 'Brigitte Vincent'), 'Saturday 27'] = '6a - 1p LEVEL ONE'
-sched_data.loc[(sched_data['Week'] == '09-22') & (sched_data['Staff'] == 'Kris Miller'), 'Saturday 27'] = '6a - 1p SUP'
-sched_data.loc[(sched_data['Week'] == '09-22') & (sched_data['Staff'] == 'Aron Gannon'), 'Saturday 27'] = '9a - 7p LEVEL ONE'
-sched_data.loc[(sched_data['Week'] == '09-22') & (sched_data['Staff'] == 'Darrell Digesare'), 'Sunday 28'] = '9a - 1p ORIENTATION'
+update_staff_shift(day_name_cache, sched_data, '09-22', 'Saturday', ['Brigitte', 'Tiffany', 'Kris', 'Aron'], ['6a - 1p LEVEL THREE', '6a - 1p LEVEL ONE', '6a - 1p SUP', '9a - 7p LEVEL ONE'], [True, True, True, False])
+update_staff_shift(day_name_cache, sched_data, '09-22', 'Sunday', ['Ox'], ['9a - 1p ORIENTATION'])
 add_call_offs(day_name_cache, sched_data, '09-22', 'Friday', ['Adam'])
 add_call_offs(day_name_cache, sched_data, '09-22', 'Saturday', ['Chris'])
 add_call_offs(day_name_cache, sched_data, '09-22', 'Sunday', ['Dempsey', 'Chris', 'Aarash'])
 
-# Fixing 09-
+
+# Fixing 09-29 #
+add_missing_staff(day_name_cache, sched_data, '09-29', 'Friday', '6a', 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '09-29', 'Friday', '12p', 'Derek Moreno')
+update_staff_shift(day_name_cache, sched_data, '09-29', 'Sunday', ['Brigid'], ['12p - 1:30p LEVEL TWO'])
+
+# Fixing 10-06 #
+add_missing_staff(day_name_cache, sched_data, '10-06', 'Friday', "6a", 'Cayenne Leupold')
+update_staff_shift(day_name_cache, sched_data, '10-06', 'Friday', ['Adam'], ['9a - 4p LEVEL THREE'])
+update_staff_shift(day_name_cache, sched_data, '10-06', 'Saturday', ['Brigitte'], ['6a - 3:30p LEVEL THREE'], [False])
+update_staff_shift(day_name_cache, sched_data, '10-06', 'Sunday', ['Kris'], ['11a - 4:30p LEVEL THREE'])
+add_call_offs(day_name_cache, sched_data, '10-06', 'Friday', ['Zach', 'John'])
+add_call_offs(day_name_cache, sched_data, '10-06', 'Saturday', ['John'])
+add_call_offs(day_name_cache, sched_data, '10-06', 'Sunday', ['Brandon', 'John'])
+
+# Fixing 10-13 #
+sched_data.loc[sched_data['Week'] == '10-13'] = sched_data[sched_data['Week'] == '10-13'].drop_duplicates(keep='first') # From bad CSV file
+sched_data.drop(sched_data[sched_data['Staff'] == 'Annotations'].index, inplace=True)
+sched_data.drop(sched_data[sched_data['Staff'].str.contains('Washington')].index, inplace=True)
+add_missing_staff(day_name_cache, sched_data, '10-13', 'Friday', "6a", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '10-13', 'Friday', "12p - 8p SUP", 'Derek Moreno')
+add_missing_staff(day_name_cache, sched_data, '10-13', 'Saturday', "12p", 'John Grundhofer')
+update_staff_shift(day_name_cache, sched_data, '10-13', 'Friday', ['Ryan'], ['9a - 5p LEVEL THREE'], [False])
+add_call_offs(day_name_cache, sched_data, '10-13', 'Friday', ['Cayenne', 'Patricia'])
+add_call_offs(day_name_cache, sched_data, '10-13', 'Saturday', ['John'])
+
+# Fixing 10-20 #
+sched_data.loc[sched_data['Week'] == '10-20'] = sched_data[sched_data['Week'] == '10-20'].drop_duplicates(keep='first') # From bad CSV file
+sched_data.drop(sched_data[sched_data['Staff'].str.contains('Michigan')].index, inplace=True)
+sched_data.drop(sched_data[sched_data['Saturday 25 (1)'] == 'HOLIDAY ALL DAY'].index, inplace = True)
+add_missing_staff(day_name_cache, sched_data, '10-20', 'Friday', "7a", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '10-20', 'Friday', "12p - 8p SUP", 'Derek Moreno')
+add_missing_staff(day_name_cache, sched_data, '10-20', 'Saturday', "12p", 'John Grundhofer')
+update_staff_shift(day_name_cache, sched_data, '10-20', 'Sunday', ['Albert', 'Zach', 'Cayenne'], ['9a - 5p LEVEL THREE', '11a - 5:30p LEVEL THREE', '12p - 7p ORIENTATION'])
+add_call_offs(day_name_cache, sched_data, '10-20', 'Saturday', ['Cayenne', 'Brandon'])
+add_call_offs(day_name_cache, sched_data, '10-20', 'Sunday', ['Brandon', 'Ron'])
+
+# Fixing 10-27 #
+
+add_missing_staff(day_name_cache, sched_data, '10-27', 'Friday', "7a", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '10-27', 'Friday', "12p", 'Derek Moreno')
+update_staff_shift(day_name_cache, sched_data, '10-27', 'Saturday', ['Brigitte'], ['11a - 5p LEVEL THREE'], [False])
+update_staff_shift(day_name_cache, sched_data, '10-27', 'Sunday', ['Adam'], ['10a - 4p LEVEL THREE'], [False])
+add_call_offs(day_name_cache, sched_data, '10-27', 'Friday', ['Zach'])
+add_call_offs(day_name_cache, sched_data, '10-27', 'Saturday', ['Darrell', 'Zach'])
+add_call_offs(day_name_cache, sched_data, '10-27', 'Sunday', ['Darrell', 'Zach', 'Chris'])
+
+# Fixing 11-03 #
+
+sched_data.loc[sched_data['Week'] == '11-03'] = sched_data[sched_data['Week'] == '11-03'].drop_duplicates(keep='first') # From bad CSV file
+add_missing_staff(day_name_cache, sched_data, '11-03', 'Friday', "7a", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '11-03', 'Friday', "12p", 'Derek Moreno')
+update_staff_shift(day_name_cache, sched_data, '11-03', 'Sunday', [
+    'Dempsey', 'Ron', 'Brigitte', 'Tif', 'Jun', 'Darrell', 'Rowan', 'Justin', 'Albert', 'Zach', 'Kris', 'Ryan'
+    ],
+    [
+    '6a - 12:30p LEVEL THREE', '6a - 11:30p LEVEL ONE', '6a = 12:30p LEVEL THREE', '6a - 7:30a LEVEL THREE', '8a - 2p LEVEL ONE', '9a - 3:30p LEVEL ONE', '9a - 4:30p LEVEL THREE', '10a - 3:30p ORIENTATION', '11a - 5:30p LEVEL THREE', '11a - 5p LEVEL THREE', '11a - 4:30p LEVEL THREE', '12p - 7p LEVEL THREE'
+    ])
+update_staff_shift(day_name_cache, sched_data, '11-03', 'Sunday', ['Adam'], ['10a - 1:30p LEVEL THREE'])
+add_call_offs(day_name_cache, sched_data, '11-03', 'Friday', ['Cayenne'])
+add_call_offs(day_name_cache, sched_data, '11-03', 'Saturday', ['Rowan'])
+add_call_offs(day_name_cache, sched_data, '11-03', 'Sunday', ['Brigid'])
+
+print(sched_data[sched_data['Week'] == '11-10'].dropna(axis=1, how='all'))
+# Fixing 11-10 #
 
 
 level_ones = [
