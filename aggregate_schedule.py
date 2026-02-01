@@ -18,7 +18,7 @@ for file in os.listdir(sched_directory):
         week_sched = week_sched_raw.filter(regex="^Friday|Saturday|Sunday|Staff")
         week_sched.replace(r'\n', ' ', regex=True, inplace=True) # Cleans out newline characters
         filename_split = filename.split('-')
-        week_sched['Week'] = f'{filename_split[2]}-{filename_split[3][:-4]}' # Identifies the week of the schedule
+        week_sched['Week'] = f'{int(filename_split[2])}-{filename_split[3][:-4]}' # Identifies the week of the schedule
         sched_data = pd.concat([week_sched, sched_data])
 
 level_ones = [
@@ -97,66 +97,66 @@ def add_missing_staff(day_name_cache, sched, week, day, time, staff_name):
 
 sched_data = sched_data.sort_values(by=['Week', 'Staff'], ascending=[1, 1]).reset_index(drop=True) # Sorts rows by Week and then by Staff, removing default index
 
-# Fixing 08-25 #
-add_missing_staff(day_name_cache, sched_data, '08-25', 'Friday', "11a - 5p", 'Cayenne Leupold')
-add_missing_staff(day_name_cache, sched_data, '08-25', 'Friday', "12p - 8p", 'Derek Moreno')
-add_missing_staff(day_name_cache, sched_data, '08-25', 'Friday', "7a", 'Kriss McGough')
-add_missing_staff(day_name_cache, sched_data, '08-25', 'Friday', "11a - 7p", 'Maureen')
-add_missing_staff(day_name_cache, sched_data, '08-25', 'Sunday', "9a", 'Tom White')
-update_staff_shift(day_name_cache, sched_data, '08-25', 'Friday', {
+# Fixing 8-25 #
+add_missing_staff(day_name_cache, sched_data, '8-25', 'Friday', "11a - 5p", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '8-25', 'Friday', "12p - 8p", 'Derek Moreno')
+add_missing_staff(day_name_cache, sched_data, '8-25', 'Friday', "7a", 'Kriss McGough')
+add_missing_staff(day_name_cache, sched_data, '8-25', 'Friday', "11a - 7p", 'Maureen')
+add_missing_staff(day_name_cache, sched_data, '8-25', 'Sunday', "9a", 'Tom White')
+update_staff_shift(day_name_cache, sched_data, '8-25', 'Friday', {
     'Tif' : {'cut_early' : '9a - 5p LEVEL THREE'},
     'Ron' : {'cut_early' : '6a - 2p LEVEL ONE'},
     'Adam' : {'cut_early' : '11a - 5p LEVEL THREE'}
 })
-update_staff_shift(day_name_cache, sched_data, '08-25', 'Saturday', {
+update_staff_shift(day_name_cache, sched_data, '8-25', 'Saturday', {
     'preston' : {'called_off' : True}
 })
-update_staff_shift(day_name_cache, sched_data, '08-25', 'Sunday', {
+update_staff_shift(day_name_cache, sched_data, '8-25', 'Sunday', {
     'Tif' : {'cut_early' : '6a - 1p LEVEL THREE'},
     'Dempsey' : {'cut_early' : '7a - 11a LEVEL THREE'},
     'Adam' : {'new_entry' : '11a - 3p LEVEL THREE'}
 })
 
-# Fixing 09-01 #
-add_missing_staff(day_name_cache, sched_data, '09-01', 'Friday', "12p", 'Cayenne Leupold')
-add_missing_staff(day_name_cache, sched_data, '09-01', 'Friday', "11a", 'Maureen')
-add_missing_staff(day_name_cache, sched_data, '09-01', 'Saturday', "11a - 7p SUP", 'Derek Moreno')
-add_missing_staff(day_name_cache, sched_data, '09-01', 'Sunday', "9a", 'Tom White')
-update_staff_shift(day_name_cache, sched_data, '09-01', 'Friday', {
+# Fixing 9-01 #
+add_missing_staff(day_name_cache, sched_data, '9-01', 'Friday', "12p", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '9-01', 'Friday', "11a", 'Maureen')
+add_missing_staff(day_name_cache, sched_data, '9-01', 'Saturday', "11a - 7p SUP", 'Derek Moreno')
+add_missing_staff(day_name_cache, sched_data, '9-01', 'Sunday', "9a", 'Tom White')
+update_staff_shift(day_name_cache, sched_data, '9-01', 'Friday', {
     'Maureen' : {'called_off' : True}
 })
-update_staff_shift(day_name_cache, sched_data, '09-01', 'Saturday', {
+update_staff_shift(day_name_cache, sched_data, '9-01', 'Saturday', {
     'Cayenne' : {'called_off' : True},
     'Maureen' : {'called_off' : True}
 })
-update_staff_shift(day_name_cache, sched_data, '09-01', 'Sunday', {
+update_staff_shift(day_name_cache, sched_data, '9-01', 'Sunday', {
     'Maureen' : {'called_off' : True},
     'Albert' : {'called_off' : True}
 })
 
-# Fixing 09-08 #
-add_missing_staff(day_name_cache, sched_data, '09-08', 'Friday', "8a", 'Cayenne Leupold')
-add_missing_staff(day_name_cache, sched_data, '09-08', 'Friday', "12p - 8p SUP", 'Derek Moreno')
-add_missing_staff(day_name_cache, sched_data, '09-08', 'Friday', "11a", 'Maureen')
-add_missing_staff(day_name_cache, sched_data, '09-08', 'Sunday', "9a", 'Tom White')
-update_staff_shift(day_name_cache, sched_data, '09-08', 'Friday', {
+# Fixing 9-08 #
+add_missing_staff(day_name_cache, sched_data, '9-08', 'Friday', "8a", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '9-08', 'Friday', "12p - 8p SUP", 'Derek Moreno')
+add_missing_staff(day_name_cache, sched_data, '9-08', 'Friday', "11a", 'Maureen')
+add_missing_staff(day_name_cache, sched_data, '9-08', 'Sunday', "9a", 'Tom White')
+update_staff_shift(day_name_cache, sched_data, '9-08', 'Friday', {
     'Brandon' : {'new_entry' : '9a - 5p LEVEL ONE'},
     'Cayenne' : {'called_off' : True},
     'Maureen' : {'called_off' : True},
     'Andrew' : {'called_off' : True},
     'Brigid' : {'called_off' : True},
 })
-update_staff_shift(day_name_cache, sched_data, '09-08', 'Saturday', {
+update_staff_shift(day_name_cache, sched_data, '9-08', 'Saturday', {
     'Kaye' : {'new_entry' : '12p - 7p LEVEL THREE'},
     'Nicole' : {'called_off' : True}
 })
 
-# Fixing 09-15 #
-add_missing_staff(day_name_cache, sched_data, '09-15', 'Friday', "8a", 'Cayenne Leupold')
-add_missing_staff(day_name_cache, sched_data, '09-15', 'Friday', "12p - 8p SUP", 'Derek Moreno')
-add_missing_staff(day_name_cache, sched_data, '09-15', 'Friday', "11a", 'Maureen')
-add_missing_staff(day_name_cache, sched_data, '09-15', 'Sunday', "9a", 'Tom White')
-update_staff_shift(day_name_cache, sched_data, '09-15', 'Friday', {
+# Fixing 9-15 #
+add_missing_staff(day_name_cache, sched_data, '9-15', 'Friday', "8a", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '9-15', 'Friday', "12p - 8p SUP", 'Derek Moreno')
+add_missing_staff(day_name_cache, sched_data, '9-15', 'Friday', "11a", 'Maureen')
+add_missing_staff(day_name_cache, sched_data, '9-15', 'Sunday', "9a", 'Tom White')
+update_staff_shift(day_name_cache, sched_data, '9-15', 'Friday', {
     'Brigitte' : {'cut_early' : '6a - 1p LEVEL THREE'},
     'Ron' : {'cut_early' : '6a - 1p LEVEL THREE'},
     'patricia' : {'cut_early' : '7a - 4p LEVEL ONE'},
@@ -167,40 +167,40 @@ update_staff_shift(day_name_cache, sched_data, '09-15', 'Friday', {
     'Adam' : {'called_off' : True},
     'Maureen' : {'called_off' : True}
 })
-update_staff_shift(day_name_cache, sched_data, '09-15', 'Saturday', {
+update_staff_shift(day_name_cache, sched_data, '9-15', 'Saturday', {
     'Adam' : {'called_off' : True},
     'Brandon' : {'called_off' : True}
 })
-update_staff_shift(day_name_cache, sched_data, '09-15', 'Sunday', {
+update_staff_shift(day_name_cache, sched_data, '9-15', 'Sunday', {
     'Tif' : {'called_off' : True},
     'Cayenne' : {'called_off' : True}
 })
 
-# Fixing 09-22 #
-add_missing_staff(day_name_cache, sched_data, '09-22', 'Friday', "8a", 'Cayenne Leupold')
-add_missing_staff(day_name_cache, sched_data, '09-22', 'Friday', "12p - 8p SUP", 'Derek Moreno')
-add_missing_staff(day_name_cache, sched_data, '09-22', 'Sunday', "9a", 'Tom White')
-update_staff_shift(day_name_cache, sched_data, '09-22', 'Friday', {
+# Fixing 9-22 #
+add_missing_staff(day_name_cache, sched_data, '9-22', 'Friday', "8a", 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '9-22', 'Friday', "12p - 8p SUP", 'Derek Moreno')
+add_missing_staff(day_name_cache, sched_data, '9-22', 'Sunday', "9a", 'Tom White')
+update_staff_shift(day_name_cache, sched_data, '9-22', 'Friday', {
     'Adam' : {'called_off' : True}
 })
-update_staff_shift(day_name_cache, sched_data, '09-22', 'Saturday', {
+update_staff_shift(day_name_cache, sched_data, '9-22', 'Saturday', {
     'Brigitte' : {'cut_early' : '6a - 1p LEVEL THREE'},
     'Tif' : {'cut_early' : '6a - 1p LEVEL ONE'},
     'Kris' : {'cut_early' : '6a - 1p SUP'},
     'aron' : {'new_entry' : '9a - 7p LEVEL ONE'},
     'Chris' : {'called_off' : True}
 })
-update_staff_shift(day_name_cache, sched_data, '09-22', 'Sunday', {
+update_staff_shift(day_name_cache, sched_data, '9-22', 'Sunday', {
     'Kaye' : {'cut_early' : '9a - 1p ORIENTATION'},
     'Dempsey' : {'called_off' : True},
     'Chris' : {'called_off' : True},
     'Aarash' : {'called_off' : True}
 })
 
-# Fixing 09-29 #
-add_missing_staff(day_name_cache, sched_data, '09-29', 'Friday', '6a', 'Cayenne Leupold')
-add_missing_staff(day_name_cache, sched_data, '09-29', 'Friday', '12p', 'Derek Moreno')
-update_staff_shift(day_name_cache, sched_data, '09-29', 'Sunday', {
+# Fixing 9-29 #
+add_missing_staff(day_name_cache, sched_data, '9-29', 'Friday', '6a', 'Cayenne Leupold')
+add_missing_staff(day_name_cache, sched_data, '9-29', 'Friday', '12p', 'Derek Moreno')
+update_staff_shift(day_name_cache, sched_data, '9-29', 'Sunday', {
     'Brigid' : {'cut_early' : '12p - 1:30p LEVEL TWO'}
 })
 
@@ -322,4 +322,4 @@ add_missing_staff(day_name_cache, sched_data, '11-17', 'Friday', '12p - 8p SUP',
 # Adding Level column #
 sched_data['Level'] = sched_data['Staff'].apply(get_level)
 
-sched_data.to_parquet() # Better memory spacewise and faster to read/write than CSV
+sched_data.to_parquet('./schedule.parquet') # Better memory spacewise and faster to read/write than CSV
