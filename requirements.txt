@@ -1,0 +1,10 @@
+pandas
+pyarrow
+parquet
+plotly
+folium
+matplotlib
+shiny
+shinywidgets
+altair
+anywidget
