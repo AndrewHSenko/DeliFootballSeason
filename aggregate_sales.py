@@ -2,6 +2,7 @@ import pyodbc
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from decimal import Decimal
 import custom_errors as ce
 
 load_dotenv()
@@ -99,7 +100,7 @@ pv_ids = {
 
 def get_check(start, end):
     query = f'''
-    SELECT ch.CheckNo, ct.Name, ci.SaleTime, ci.MenuID, ci.Quantity, ci.OriginalPrice
+    SELECT ch.CheckNo, ct.Name, ci.SaleTime, ci.MenuID, ci.Quantity, ci.GrossPrice
     FROM ((Squirrel.dbo.X_CheckHeader AS ch
     JOIN Squirrel.dbo.X_CheckTable AS ct ON ch.CheckID = ct.CheckID)
     JOIN Squirrel.dbo.X_CheckItem AS ci ON ch.CheckID = ci.CheckID)
@@ -127,12 +128,13 @@ def get_check_data(start, end):
                 print(q_result[0])
                 continue
             if sale_time not in checks: # Add this check
-                checks[sale_time] = {'check_no' : q_result[0], 'check_name' : q_result[1].strip(), 'menu_ids' : {q_result[3] : int(q_result[4])}}
+                checks[sale_time] = {'check_no' : q_result[0], 'check_name' : q_result[1].strip(), 'menu_ids' : {q_result[3] : [int(q_result[4]), round(Decimal(q_result[5]), 2)]}}
             else: # Update this check
                 if q_result[3] in checks[sale_time]['menu_ids']:
-                    checks[sale_time]['menu_ids'][q_result[3]] += q_result[4]
+                    checks[sale_time]['menu_ids'][q_result[3]][0] += q_result[4]
+                    checks[sale_time]['menu_ids'][q_result[3]][1] += q_result[5]
                 else:
-                    checks[sale_time]['menu_ids'][q_result[3]] = q_result[4]
+                    checks[sale_time]['menu_ids'][q_result[3]] = [int(q_result[4]), round(Decimal(q_result[5]), 2)]
             q_result = cursor.fetchone()
     # Now checks is filled with every check entered between start and end #
     no_make_id = [595, 8291]
@@ -149,10 +151,14 @@ def get_check_data(start, end):
         bl_qty = 0
         pv_items = [] # PV items
         pv_qty = 0
-        for menu_id, qty in check_data['menu_ids'].items():
+        total_price = 0
+        for menu_id, item_info in check_data['menu_ids'].items():
             if menu_id in backline_ids:
-                for i in range(int(qty)):
+                qty = item_info[0]
+                price = item_info[1]
+                for i in range(qty):
                     bl_items.append(backline_ids[menu_id])
+                total_price += price
                 if menu_id == 1638: # Latke
                     latke += qty
                     continue
@@ -161,8 +167,11 @@ def get_check_data(start, end):
                 has_start = True
                 has_finish = True
             elif menu_id in pv_ids:
-                for i in range(int(qty)):
+                qty = item_info[0]
+                price = item_info[1]
+                for i in range(qty):
                     pv_items.append(pv_ids[menu_id])
+                total_price += price
                 if menu_id == 4444: # Ht'd Knish
                     knish += qty
                     continue
@@ -202,10 +211,33 @@ def get_check_data(start, end):
             continue
         sale_time = check.strftime('%Y%m%d%H%M%S')
         # Check No, Check Name, Check Qty, Has___, BLitems / PVitems #
-        checks_data[sale_time] = [check_data['check_no'], check_data['check_name'], check_qty, check_data['total_price'], (has_start, has_finish, has_PV), (bl_qty, pv_qty), (bl_items, pv_items)]
+        checks_data[sale_time] = [check_data['check_no'], check_data['check_name'], check_qty, total_price, (has_start, has_finish, has_PV), (bl_qty, pv_qty), (bl_items, pv_items)]
     # checks_data is now filled with the qty for each check (including empty checks)
     return checks_data
 
-results = get_check_data('20260201120000', '20260201120500')
-for time, data in results.items():
-    print(time + ':\n', data)
+def get_total_sales(start, end):
+    query = f'''
+    SELECT ci.SaleTime, ci.GrossPrice
+    FROM ((Squirrel.dbo.X_CheckItem AS ci
+    JOIN Squirrel.dbo.K_Menu as km ON ci.MenuID = km.MenuID)
+    JOIN Squirrel.dbo.K_Category as kc ON km.CatID = kc.CatID)
+    WHERE ci.SaleTime BETWEEN '{start}' AND '{end}'
+    AND kc.CatID IN (171, 180, 128, 183)
+    '''
+    return query
+
+def get_total_sales_data(start, end):
+    SERVER = os.getenv('SERVER')
+    DATABASE = os.getenv('DB')
+    connectionString = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={SERVER};DATABASE={DATABASE};Trusted_Connection=yes;TrustServerCertificate=yes;'
+    with pyodbc.connect(connectionString) as conn:
+        cursor = conn.cursor()
+        start_time = datetime.strptime(start, '%Y%m%d%H%M%S')
+        end_time = datetime.strptime(end, '%Y%m%d%H%M%S')
+        cursor.execute(get_total_sales(start_time, end_time))
+        q_result = cursor.fetchone()
+        if q_result == None: # Empty query results
+            return
+        while q_result != None:
+            # Do something here
+            q_result = cursor.fetchone()
